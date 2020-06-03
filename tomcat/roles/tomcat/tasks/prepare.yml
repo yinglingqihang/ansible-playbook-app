@@ -1,0 +1,40 @@
+#pre before deploy  
+- name: 关闭firewalld 
+  service: name=firewalld state=stopped enabled=no
+  when: ansible_distribution == "CentOS"
+
+- name: 临时关闭 selinux
+  shell: "setenforce 0"
+  failed_when: false
+  when: ansible_distribution == "CentOS"
+
+- name: 永久关闭 selinux
+  lineinfile:
+    dest: /etc/selinux/config
+    regexp: "^SELINUX="
+    line: "SELINUX=disabled"
+  when: ansible_distribution == "CentOS"
+
+- name: groupadd "tomcat"
+  group:
+    name: tomcat
+
+- name: useradd "tomcat"
+  user:
+    name: tomcat
+    group: tomcat
+    system: yes
+
+- name: Create a project directory
+  file:
+    path: /data
+    state: directory
+
+- name: copy_jdk_package
+  copy: src=jdk-8u221-linux-x64.tar.gz dest=/data
+
+- name: unzip_package
+  shell: cd /data && tar -xf jdk-8u221-linux-x64.tar.gz
+
+- name: remove_jdk_package
+  file: path=/data/jdk-8u221-linux-x64.tar.gz state=absent
